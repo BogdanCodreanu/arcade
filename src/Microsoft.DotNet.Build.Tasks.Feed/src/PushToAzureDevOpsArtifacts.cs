@@ -54,27 +54,15 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                     var itemsToPushNoExcludes = ItemsToPush.
                         Where(i => !string.Equals(i.GetMetadata("ExcludeFromManifest"), "true", StringComparison.OrdinalIgnoreCase));
 
-                    // To prevent conflicts with other parts of the build system that might move the artifacts
-                    // folder while the artifacts are still being published, we copy the artifacts to a temporary
-                    // location only for the sake of uploading them. This is a temporary solution and will be
-                    // removed in the future.
-                    if (!Directory.Exists(AssetsTemporaryDirectory))
-                    {
-                        Log.LogMessage(MessageImportance.High,
-                            $"Assets temporary directory {AssetsTemporaryDirectory} doesn't exist. Creating it.");
-                        Directory.CreateDirectory(AssetsTemporaryDirectory);
-                    }
-
                     if (PublishFlatContainer)
                     {
                         blobArtifacts = itemsToPushNoExcludes
                             .Select(BuildManifestUtil.CreateBlobArtifactModel);
+
                         foreach (var blobItem in itemsToPushNoExcludes)
                         {
-                            var destFile = $"{AssetsTemporaryDirectory}/{Path.GetFileName(blobItem.ItemSpec)}";
-                            File.Copy(blobItem.ItemSpec, destFile);
                             Log.LogMessage(MessageImportance.High,
-                                $"##vso[artifact.upload containerfolder=BlobArtifacts;artifactname=BlobArtifacts]{destFile}");
+                                $"##vso[artifact.upload containerfolder=BlobArtifacts;artifactname=BlobArtifacts]{blobItem.ItemSpec}");
                         }
                     }
                     else
@@ -95,20 +83,14 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
 
                         foreach (var packagePath in packageItems)
                         {
-                            var destFile = $"{AssetsTemporaryDirectory}/{Path.GetFileName(packagePath.ItemSpec)}";
-                            File.Copy(packagePath.ItemSpec, destFile);
-
                             Log.LogMessage(MessageImportance.High,
-                                $"##vso[artifact.upload containerfolder=PackageArtifacts;artifactname=PackageArtifacts]{destFile}");
+                                $"##vso[artifact.upload containerfolder=PackageArtifacts;artifactname=PackageArtifacts]{packagePath.ItemSpec}");
                         }
 
                         foreach (var symbolPath in symbolItems)
                         {
-                            var destFile = $"{AssetsTemporaryDirectory}/{Path.GetFileName(symbolPath.ItemSpec)}";
-                            File.Copy(symbolPath.ItemSpec, destFile);
-
                             Log.LogMessage(MessageImportance.High,
-                                $"##vso[artifact.upload containerfolder=BlobArtifacts;artifactname=BlobArtifacts]{destFile}");
+                                $"##vso[artifact.upload containerfolder=BlobArtifacts;artifactname=BlobArtifacts]{symbolPath.ItemSpec}");
                         }
 
                         packageArtifacts = packageItems.Select(BuildManifestUtil.CreatePackageArtifactModel);
